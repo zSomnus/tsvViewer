@@ -3,6 +3,7 @@
 #include <QFileDialog>
 #include <QRegularExpression>
 #include <QMessageBox>
+#include <QInputDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,139 +20,13 @@ MainWindow::MainWindow(QWidget *parent)
 "#pragma warning disable CS0649\n"
 "using JellyScript;\n"
 "using UnityEngine;\n"
-"public class DS_Joanna_";
-
-    dialogueKeyPrefix = "dialogue_";
+"public class ";
 
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
-}
-
-
-void MainWindow::on_actionOpen_triggered()
-{
-    auto filename = QFileDialog::getOpenFileName(this, "Open File", QDir::rootPath(), "TSV File (*.tsv)");
-
-    if(filename.isEmpty()) {
-        return;
-    }
-
-    // Clear the table
-    table->clear();
-    table->setRowCount(0);
-    table->setColumnCount(0);
-
-    QFile file(filename);
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-         return;
-    }
-
-    QTextStream xin(&file);
-    int i = 0;
-
-    while(!xin.atEnd()) {
-        auto line = xin.readLine();
-        table->setRowCount(i + 1);
-
-        auto value = line.split('\t');
-
-        const int colCount = value.size();
-        table->setColumnCount(colCount);
-
-        for(int j=0; j < colCount; ++j) {
-            setValueAt(i, j, value.at(j));
-        }
-
-        ++i;
-    }
-
-    file.close();
-    Flag_IsOpen = 1;
-    Flag_IsNew = 0;
-    Last_FileName = filename;
-}
-
-void MainWindow::on_actionNew_triggered()
-{
-    table->clear();
-    const int rowCount = 2;
-    const int colCount = 3;
-    table->setRowCount(rowCount);
-    table->setColumnCount(colCount);
-
-    Flag_IsNew = 1;
-    Flag_IsOpen = 1;
-}
-
-void MainWindow::on_actionSave_triggered()
-{
-    if(Flag_IsNew) {
-        auto filename = QFileDialog::getSaveFileName(this, "Save", QDir::rootPath(), "TSV File (*.tsv)");
-
-        if(filename.isEmpty()) {
-            return;
-        }
-
-        QFile file(filename);
-
-        if(!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            return;
-        }
-
-        QTextStream xout(&file);
-        const int rowCount = table->rowCount();
-        const int colCount = table->columnCount();
-
-        for(int i=0; i<rowCount; ++i) {
-            xout << getValueAt(i, 0);
-            for(int j=1; j<colCount; ++j) {
-                xout << "\t" << getValueAt(i, j);
-            }
-            xout << "\n";
-        }
-        file.flush();
-        file.close();
-
-        Flag_IsNew = 0;
-        Last_FileName = filename;
-
-    } else {
-        QFile file(Last_FileName);
-        if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
-        {
-            QMessageBox::warning(this,tr("Warning"),tr("Fail to open the file"));
-            return;
-        }
-        else
-        {
-            if(Last_FileName.isEmpty()) {
-                return;
-            }
-
-            QFile file(Last_FileName);
-
-            if(!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                return;
-            }
-
-            QTextStream xout(&file);
-            const int rowCount = table->rowCount();
-            const int colCount = table->columnCount();
-
-            for(int i=0; i<rowCount; ++i) {
-                xout << getValueAt(i, 0);
-                for(int j=1; j<colCount; ++j) {
-                    xout << "\t" << getValueAt(i, j);
-                }
-                xout << "\n";
-            }
-            file.flush();
-            file.close();
-        }
-    }
 }
 
 void MainWindow::on_actionConvert_triggered()
@@ -161,20 +36,27 @@ void MainWindow::on_actionConvert_triggered()
     if(filename.isEmpty()) {
         return;
     } else {
+        // Clear the table
+        table->clear();
+        table->setRowCount(0);
+        table->setColumnCount(0);
+
+        // Clear the text edit
+        textEdit->clear();
+        textEdit->setPlainText("");
+
         QRegularExpression re("[0-9]+");
         QRegularExpressionMatch match = re.match(filename);
 
         if(match.hasMatch()) {
+            dialogueKeyPrefix = "dialogue_";
             dialogueKeyPrefix += match.captured() + "_";
-            codePrefix += match.captured() + " : DialogueScript\n{\n\tinternal override BaseDialogueEntry[] ConstructDialogue() => new BaseDialogueEntry[]\n\t{\n";
-            textEdit->insertPlainText(codePrefix);
+            setFileName(match.captured());
+            textEdit->insertPlainText(codePrefix + saveFilename + " : DialogueScript\n{\n"
+"\tinternal override BaseDialogueEntry[] ConstructDialogue() => new BaseDialogueEntry[]\n"
+"\t{\n");
         }
     }
-
-    // Clear the table
-    table->clear();
-    table->setRowCount(0);
-    table->setColumnCount(0);
 
     // Get the file and open it
     QFile file(filename);
@@ -256,14 +138,78 @@ QString MainWindow::getValueAt(int i, int j)
     return table->item(i, j)->text();
 }
 
+void MainWindow::exportCsFile(QString filename)
+{
+    if(filename.isEmpty()) {
+        return;
+    }
+
+    QFile file(filename);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QMessageBox::information(this, "Error Message", "Invalid file name!");
+        return;
+    }
+
+    QTextStream xout(&file);
+    xout << textEdit->toPlainText();
+
+    file.flush();
+    file.close();
+
+    Flag_IsNew = 0;
+    Last_FileName = filename;
+}
+
+void MainWindow::exportTsvFile(QString filename)
+{
+    if(filename.isEmpty()) {
+        return;
+    }
+
+    QFile file(filename);
+
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return;
+    }
+
+    QTextStream xout(&file);
+    const int rowCount = table->rowCount();
+    const int colCount = table->columnCount();
+
+    for(int i=0; i<rowCount; ++i) {
+        xout << getValueAt(i, 0);
+        for(int j=1; j<colCount; ++j) {
+            xout << "\t" << getValueAt(i, j);
+        }
+        xout << "\n";
+    }
+    file.flush();
+    file.close();
+
+    Flag_IsNew = 0;
+    Last_FileName = filename;
+}
+
+void MainWindow::setFileName(QString indexString)
+{
+    bool ok;
+    QString text = QInputDialog::getText(this, "Set file name", "File name", QLineEdit::Normal, "DS_Joanna_" + indexString, &ok);
+    if (ok && !text.isEmpty())
+    {
+        saveFilename = text;
+    }
+}
+
 void MainWindow::SetDialogue(QString name, QString dialogue)
 {
     QString temp = "";
 
     if(name.isEmpty()) {
-        temp = "\t\tnew TextDialogueEntry(\"" + dialogue + "\",\n";
+        temp = "\t\tnew TextDialogueEntry(\"" + dialogue + "\"),\n";
     } else {
-        temp = "\t\tnew TextDialogueEntry(\"" + name + "\", \"" + dialogue + "\",\n";
+        temp = "\t\tnew TextDialogueEntry(\"" + name + "\", \"" + dialogue + "\"),\n";
     }
 
     textEdit->insertPlainText(temp);
@@ -271,15 +217,18 @@ void MainWindow::SetDialogue(QString name, QString dialogue)
 
 void MainWindow::on_actionExport_all_triggered()
 {
+    auto filename = QFileDialog::getExistingDirectory(this, "Export", QDir::rootPath());
 
+    exportTsvFile(filename + "/" + saveFilename + ".tsv");
+    exportCsFile(filename + "/" + saveFilename + ".cs");
 }
 
 void MainWindow::on_actionExport_tsv_triggered()
 {
-
+    exportTsvFile(QFileDialog::getExistingDirectory(this, "Export", QDir::rootPath()) + "/" + saveFilename + ".tsv");
 }
 
 void MainWindow::on_actionExport_Cs_triggered()
 {
-
+    exportCsFile(QFileDialog::getExistingDirectory(this, "Export", QDir::rootPath()) + "/" + saveFilename + ".cs");
 }

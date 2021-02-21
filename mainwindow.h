@@ -19,12 +19,6 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_actionOpen_triggered();
-
-    void on_actionNew_triggered();
-
-    void on_actionSave_triggered();
-
     void on_actionConvert_triggered();
 
     void on_actionExport_all_triggered();
@@ -37,6 +31,10 @@ private:
 
     void setValueAt(int i, int j, const QString &value);
     QString getValueAt(int i, int j);
+
+    void exportCsFile(QString filename);
+    void exportTsvFile(QString filename);
+    void setFileName(QString indexString = "00");
 
     void SetDialogue(QString name, QString dialogue);
 
@@ -52,5 +50,7 @@ private:
 
     QString dialogueKeyPrefix;
     QString codePrefix;
+
+    QString saveFilename;
 };
 #endif // MAINWINDOW_H
