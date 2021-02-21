@@ -10,6 +10,19 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     table = ui->tableWidget;
+    textEdit = ui->plainTextEdit;
+
+    codePrefix = "/*\n"
+" * Copyright (c) JellySnow Studio. All rights reserved.\n"
+" *\n"
+" */\n"
+"#pragma warning disable CS0649\n"
+"using JellyScript;\n"
+"using UnityEngine;\n"
+"public class DS_Joanna_";
+
+    dialogueKeyPrefix = "dialogue_";
+
 }
 
 MainWindow::~MainWindow()
@@ -145,10 +158,6 @@ void MainWindow::on_actionConvert_triggered()
 {
     auto filename = QFileDialog::getOpenFileName(this, "Open File", QDir::rootPath(), "LNX File (*.lnx)");
 
-    QString codePrefix = "";
-
-    QString dialogueKeyPrefix = "dialogue_";
-
     if(filename.isEmpty()) {
         return;
     } else {
@@ -157,9 +166,10 @@ void MainWindow::on_actionConvert_triggered()
 
         if(match.hasMatch()) {
             dialogueKeyPrefix += match.captured() + "_";
+            codePrefix += match.captured() + " : DialogueScript\n{\n\tinternal override BaseDialogueEntry[] ConstructDialogue() => new BaseDialogueEntry[]\n\t{\n";
+            textEdit->insertPlainText(codePrefix);
         }
     }
-
 
     // Clear the table
     table->clear();
@@ -182,11 +192,13 @@ void MainWindow::on_actionConvert_triggered()
         auto line = xin.readLine();
 
         if(line.contains(';')) {
-            table->setRowCount(row + 1);
 
             // It's a dialogue
+            table->setRowCount(row + 1);
             setValueAt(row, 0, dialogueKeyPrefix + QString::number(row + 1));
 
+            QString name = "";
+            QString dialogue = "";
             auto value = line.split(';');
 
             const int colCount = value.size();
@@ -198,19 +210,29 @@ void MainWindow::on_actionConvert_triggered()
 
                     if(match.hasMatch()) {
                         QString matched = match.captured();
-                        setValueAt(row, 1, matched);
+                        name = matched;
+                        setValueAt(row, 1, name);
                     }
                 } else {
-                    setValueAt(row, 2, value.at(j));
+                    dialogue = value.at(j);
+                    setValueAt(row, 2, dialogue);
                 }
             }
 
+            SetDialogue(name, dialogue);
             ++row;
 
         } else {
             // It's not a dialogue
+            if(line.isEmpty()) {
+                textEdit->insertPlainText("\n");
+            } else {
+                textEdit->insertPlainText("\t\t// " + line + "\n");
+            }
         }
     }
+
+    textEdit->insertPlainText("\t};\n}");
 
     file.close();
     Flag_IsNew = 1;
@@ -232,6 +254,19 @@ QString MainWindow::getValueAt(int i, int j)
         return "";
     }
     return table->item(i, j)->text();
+}
+
+void MainWindow::SetDialogue(QString name, QString dialogue)
+{
+    QString temp = "";
+
+    if(name.isEmpty()) {
+        temp = "\t\tnew TextDialogueEntry(\"" + dialogue + "\",\n";
+    } else {
+        temp = "\t\tnew TextDialogueEntry(\"" + name + "\", \"" + dialogue + "\",\n";
+    }
+
+    textEdit->insertPlainText(temp);
 }
 
 void MainWindow::on_actionExport_all_triggered()

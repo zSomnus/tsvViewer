@@ -8,6 +8,7 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class QTableWidget;
+class QPlainTextEdit;
 
 class MainWindow : public QMainWindow
 {
@@ -37,6 +38,8 @@ private:
     void setValueAt(int i, int j, const QString &value);
     QString getValueAt(int i, int j);
 
+    void SetDialogue(QString name, QString dialogue);
+
     Ui::MainWindow *ui;
 
     int Flag_IsOpen = 0;       // Flag: Is the file opend or not
@@ -45,5 +48,9 @@ private:
     QString Last_FileContent;  // File content during last save
 
     QTableWidget *table;
+    QPlainTextEdit *textEdit;
+
+    QString dialogueKeyPrefix;
+    QString codePrefix;
 };
 #endif // MAINWINDOW_H
