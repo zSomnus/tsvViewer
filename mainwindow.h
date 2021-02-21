@@ -26,6 +26,12 @@ private slots:
 
     void on_actionConvert_triggered();
 
+    void on_actionExport_all_triggered();
+
+    void on_actionExport_tsv_triggered();
+
+    void on_actionExport_Cs_triggered();
+
 private:
 
     void setValueAt(int i, int j, const QString &value);

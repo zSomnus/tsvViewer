@@ -145,9 +145,21 @@ void MainWindow::on_actionConvert_triggered()
 {
     auto filename = QFileDialog::getOpenFileName(this, "Open File", QDir::rootPath(), "LNX File (*.lnx)");
 
+    QString codePrefix = "";
+
+    QString dialogueKeyPrefix = "dialogue_";
+
     if(filename.isEmpty()) {
         return;
+    } else {
+        QRegularExpression re("[0-9]+");
+        QRegularExpressionMatch match = re.match(filename);
+
+        if(match.hasMatch()) {
+            dialogueKeyPrefix += match.captured() + "_";
+        }
     }
+
 
     // Clear the table
     table->clear();
@@ -161,17 +173,19 @@ void MainWindow::on_actionConvert_triggered()
     }
 
     QTextStream xin(&file);
-    int i = 0;
+
+    int row = 0;
+
+    table->setColumnCount(3);
 
     while(!xin.atEnd()) {
         auto line = xin.readLine();
-        table->setRowCount(i + 1);
-        table->setColumnCount(3);
 
         if(line.contains(';')) {
+            table->setRowCount(row + 1);
 
             // It's a dialogue
-            setValueAt(i, 0, "Dialogue");
+            setValueAt(row, 0, dialogueKeyPrefix + QString::number(row + 1));
 
             auto value = line.split(';');
 
@@ -179,25 +193,23 @@ void MainWindow::on_actionConvert_triggered()
 
             for(int j=0; j < colCount; ++j) {
                 if(value.at(j).contains("대화 이름=\"")){
-//                    setValueAt(i, 1, value.at(j));
-
                     QRegularExpression re("(?<=\").*?(?=\")");
                     QRegularExpressionMatch match = re.match(value.at(j));
 
                     if(match.hasMatch()) {
                         QString matched = match.captured();
-                        setValueAt(i, 1, matched);
+                        setValueAt(row, 1, matched);
                     }
                 } else {
-                    setValueAt(i, 2, value.at(j));
+                    setValueAt(row, 2, value.at(j));
                 }
             }
+
+            ++row;
+
         } else {
             // It's not a dialogue
-            setValueAt(i, 0, line);
         }
-
-        ++i;
     }
 
     file.close();
@@ -220,4 +232,19 @@ QString MainWindow::getValueAt(int i, int j)
         return "";
     }
     return table->item(i, j)->text();
+}
+
+void MainWindow::on_actionExport_all_triggered()
+{
+
+}
+
+void MainWindow::on_actionExport_tsv_triggered()
+{
+
+}
+
+void MainWindow::on_actionExport_Cs_triggered()
+{
+
 }
