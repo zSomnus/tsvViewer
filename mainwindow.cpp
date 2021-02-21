@@ -101,7 +101,8 @@ void MainWindow::on_actionConvert_triggered()
                 }
             }
 
-            SetDialogue(name, dialogue);
+            setDialogueKey(dialogueKeyPrefix + QString::number(row + 1));
+//            setDialogue(name, dialogue);
             ++row;
 
         } else {
@@ -202,7 +203,14 @@ void MainWindow::setFileName(QString indexString)
     }
 }
 
-void MainWindow::SetDialogue(QString name, QString dialogue)
+void MainWindow::setDialogueKey(QString key)
+{
+    QString temp = "";
+    temp = "\t\tnew TextDialogueEntry(\"" + key + "\"),\n";
+    textEdit->insertPlainText(temp);
+}
+
+void MainWindow::setDialogue(QString name, QString dialogue)
 {
     QString temp = "";
 

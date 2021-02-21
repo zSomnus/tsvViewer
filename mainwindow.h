@@ -36,7 +36,8 @@ private:
     void exportTsvFile(QString filename);
     void setFileName(QString indexString = "00");
 
-    void SetDialogue(QString name, QString dialogue);
+    void setDialogue(QString name, QString dialogue);
+    void setDialogueKey(QString key);
 
     Ui::MainWindow *ui;
 
