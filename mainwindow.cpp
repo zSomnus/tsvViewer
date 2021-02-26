@@ -73,9 +73,8 @@ void MainWindow::on_actionConvert_triggered()
     while(!xin.atEnd()) {
         auto line = xin.readLine();
 
+        // If this line is a Dialog
         if(line.contains(';')) {
-
-            // It's a dialogue
             table->setRowCount(row + 1);
             setValueAt(row, 0, dialogueKeyPrefix + QString::number(row + 1));
 
@@ -105,7 +104,16 @@ void MainWindow::on_actionConvert_triggered()
 //            setDialogue(name, dialogue);
             ++row;
 
-        } else {
+        }
+        // If this line is a Custom sound effect
+        else if(line.contains("커스텀효과음")) {
+            textEdit->insertPlainText("\t\tnew SoundDialogueEntry(),\t// " + line + "\n");
+        }
+        // If this line is a Custom background sound
+        else if(line.contains("커스텀배경음")) {
+            textEdit->insertPlainText("\t\tnew SoundDialogueEntry(),\t// " + line + "\n");
+        }
+        else {
             // It's not a dialogue
             if(line.isEmpty()) {
                 textEdit->insertPlainText("\n");
